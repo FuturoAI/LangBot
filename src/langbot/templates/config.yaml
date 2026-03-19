@@ -78,6 +78,11 @@ plugin:
     runtime_ws_url: 'ws://langbot_plugin_runtime:5400/control/ws'
     enable_marketplace: true
     display_plugin_debug_url: 'ws://localhost:5401/plugin/debug/ws'
+box:
+    default_host_workspace: './data/box-workspaces/default'
+    allowed_host_mount_roots:
+        - './data/box-workspaces'
+        - '/tmp'
 space:
     # Space service URL for OAuth and API
     url: 'https://space.langbot.app'
