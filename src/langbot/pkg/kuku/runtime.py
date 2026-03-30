@@ -31,6 +31,11 @@ def _silence_debug_enabled() -> bool:
     return os.environ.get('KUKU_SILENCE_DEBUG', '').strip().lower() in ('1', 'true', 'yes')
 
 
+def _kuku_trace_enabled() -> bool:
+    """Log why KUKU did or did not record activity (set KUKU_TRACE=1)."""
+    return os.environ.get('KUKU_TRACE', '').strip().lower() in ('1', 'true', 'yes')
+
+
 def silence_threshold_seconds(row: dict) -> float:
     """Seconds of human inactivity before KUKU may send a proactive opener."""
     ss = row.get('silence_seconds')
@@ -117,10 +122,24 @@ class KukuRuntime:
         """Record a human Discord message in a channel when KUKU is enabled for that scope."""
         now = time.time()
         settings = await self._get_settings_cached(bot_uuid, 'discord', channel_id, now)
-        if not settings or not settings.get('enabled', True):
+        trace = _kuku_trace_enabled()
+        if not settings:
+            if trace:
+                self._logger.info(
+                    'KUKU trace: no settings for bot_uuid=%s channel_id=%s — '
+                    'PUT KUKU for this exact channel id (threads use the thread id, not the parent channel).',
+                    bot_uuid,
+                    channel_id,
+                )
+            return
+        if not settings.get('enabled', True):
+            if trace:
+                self._logger.info('KUKU trace: disabled for bot_uuid=%s channel_id=%s', bot_uuid, channel_id)
             return
         scope = (bot_uuid, 'discord', str(channel_id))
         self._last_human_message_ts[scope] = now
+        if trace:
+            self._logger.info('KUKU trace: recorded human activity bot_uuid=%s channel_id=%s', bot_uuid, channel_id)
 
     async def maybe_handle_discord_group_message(self, bot_uuid: str, event) -> bool:
         """Immediately reply when a Discord group message directly targets KUKU."""

@@ -12,6 +12,7 @@ import datetime
 # 使用BytesIO创建文件对象，避免路径问题
 import io
 import asyncio
+import logging
 from enum import Enum
 
 from langbot.pkg.utils import httpclient
@@ -791,7 +792,7 @@ class DiscordEventConverter(abstract_platform_adapter.AbstractEventConverter):
         pass
 
     @staticmethod
-    async def target2yiri(event: discord.Message) -> platform_events.Event:
+    async def target2yiri(event: discord.Message) -> platform_events.Event | None:
         message_chain = await DiscordMessageConverter.target2yiri(event)
 
         if isinstance(event.channel, discord.DMChannel):
@@ -805,15 +806,17 @@ class DiscordEventConverter(abstract_platform_adapter.AbstractEventConverter):
                 time=event.created_at.timestamp(),
                 source_platform_object=event,
             )
-        elif isinstance(event.channel, discord.TextChannel):
+        if isinstance(event.channel, (discord.TextChannel, discord.Thread)):
+            ch = event.channel
+            ch_name = getattr(ch, 'name', None) or ''
             return platform_events.GroupMessage(
                 sender=platform_entities.GroupMember(
                     id=event.author.id,
                     member_name=event.author.name,
                     permission=platform_entities.Permission.Member,
                     group=platform_entities.Group(
-                        id=event.channel.id,
-                        name=event.channel.name,
+                        id=ch.id,
+                        name=ch_name,
                         permission=platform_entities.Permission.Member,
                     ),
                     special_title='',
@@ -822,6 +825,7 @@ class DiscordEventConverter(abstract_platform_adapter.AbstractEventConverter):
                 time=event.created_at.timestamp(),
                 source_platform_object=event,
             )
+        return None
 
 
 class DiscordAdapter(abstract_platform_adapter.AbstractMessagePlatformAdapter):
@@ -853,6 +857,13 @@ class DiscordAdapter(abstract_platform_adapter.AbstractMessagePlatformAdapter):
                     return
 
                 lb_event = await adapter_self.event_converter.target2yiri(message)
+                if lb_event is None:
+                    logging.getLogger('langbot.platform.discord').debug(
+                        'Skipping Discord message: unsupported channel type %s (id=%s)',
+                        type(message.channel).__name__,
+                        getattr(message.channel, 'id', None),
+                    )
+                    return
                 await adapter_self.listeners[type(lb_event)](lb_event, adapter_self)
 
         intents = discord.Intents.default()

@@ -26,12 +26,14 @@ Set these **before** starting the backend in the same shell (or export them in y
 |----------|--------|
 | `KUKU_SILENCE_DEBUG=1` | Log each silence-detector tick at INFO (`1`, `true`, or `yes`, case-insensitive). |
 | `KUKU_SILENCE_TICK_INTERVAL_SEC=10` | Sleep between ticks (seconds). Clamped to **5–300**; default **20** if unset or invalid. |
+| `KUKU_TRACE=1` | Log when a Discord message **does** or **does not** update KUKU “last human activity” (missing settings, wrong `channel_id`, disabled row). Use when silence never triggers. |
 
 Example:
 
 ```bash
 export KUKU_SILENCE_DEBUG=1
 export KUKU_SILENCE_TICK_INTERVAL_SEC=10
+export KUKU_TRACE=1
 uv run main.py
 ```
 
