@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import copy
 import datetime
 import logging
+import random
 import os
 import time
 import traceback
@@ -239,9 +240,19 @@ class KukuRuntime:
 
         duration_phrase = silence_duration_prompt_phrase(silence_seconds_effective)
         system = str(persona.get('system_prompt') or '')
+        # Changing detail so the model sees a non-identical user message each fire (reduces copy-paste openers).
+        stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
+        angle = random.choice(
+            (
+                'Try a specific or playful angle; avoid a generic "how is everyone" check-in.',
+                'Reference something casual or observational instead of a broad mood poll.',
+                'Open with curiosity about something concrete rather than vague small talk.',
+            )
+        )
         user_instruction = (
-            f'The group chat has had no messages for {duration_phrase}. '
+            f'[{stamp}] The group chat has had no messages for {duration_phrase}. '
             'Write ONE short, natural message to gently restart conversation. '
+            f'{angle} '
             'Stay in character. No preface or meta commentary. No quotes.'
         )
         messages = [
