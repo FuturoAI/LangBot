@@ -19,7 +19,7 @@ Get the current repo code running locally on `http://127.0.0.1:5300`, with:
 
 On every run it:
 
-- rewrites `web/.env` with `NEXT_PUBLIC_API_BASE_URL=http://localhost:5300`
+- rewrites `web/.env` with `NEXT_PUBLIC_API_BASE_URL` (default `http://127.0.0.1:5300`). If LangBot logs `Running on http://0.0.0.0:15300` (or any other port), run `LANG_BOT_HTTP_PORT=15300 ./scripts/kuku-bootstrap.sh` so `curl` and the web UI target the same port.
 - resets the demo API key in `data/langbot.db` to `demo-kuku-key`
 - reads one bot UUID from the `bots` table
 - writes `.kuku-demo.env` for the demo `curl` commands
