@@ -7,7 +7,7 @@ from .. import migration
 
 @migration.migration_class(26)
 class DBMigrateKukuSilenceSeconds(migration.DBMigration):
-    """KUKU: add silence_seconds, migrate from silence_minutes (* 60), drop silence_minutes."""
+    """KUKU: add silence_seconds, migrate from silence_minutes (* 60), drop silence_minutes on PostgreSQL."""
 
     async def _table_exists(self, table_name: str) -> bool:
         if self.ap.persistence_mgr.db.name == 'postgresql':
@@ -48,6 +48,19 @@ class DBMigrateKukuSilenceSeconds(migration.DBMigration):
         self.ap.logger.info('Added %s column to %s table.', column_name, table_name)
 
     async def _drop_column_if_exists(self, table_name: str, column_name: str) -> None:
+        """Drop column on PostgreSQL only.
+
+        SQLite does not support ``DROP COLUMN`` before 3.35.0; older builds would fail.
+        The ORM no longer maps ``silence_minutes``, so leaving the column on SQLite is safe.
+        """
+        if self.ap.persistence_mgr.db.name != 'postgresql':
+            self.ap.logger.info(
+                'Skipping DROP COLUMN %s on %s for %s (PostgreSQL only).',
+                column_name,
+                table_name,
+                self.ap.persistence_mgr.db.name,
+            )
+            return
         columns = await self._get_table_columns(table_name)
         if column_name not in columns:
             return

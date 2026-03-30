@@ -48,9 +48,9 @@ The stored threshold is **`silence_seconds`**: how many **seconds** must pass af
 - Allowed range: **1–86400** (enforced by the API).
 - If you **omit** `silence_seconds` on PUT, the service defaults to **1800** (30 minutes).
 
-**Deprecated (backward compatible):** you may still send **`silence_minutes`** alone; it is converted to `silence_minutes * 60` when `silence_seconds` is not in the body. Prefer `silence_seconds` in new integrations.
+**Deprecated (backward compatible):** you may still send **`silence_minutes`** alone (**must be greater than 0**; enforced by the API); it is converted to `silence_minutes * 60` when `silence_seconds` is not in the body. Prefer `silence_seconds` in new integrations.
 
-Database: migration **26** consolidates on a single `silence_seconds` column (see `dbm026_kuku_silence_seconds.py`). Run the backend once so migrations apply.
+Database: migration **26** backfills `silence_seconds` from legacy `silence_minutes` and drops `silence_minutes` on PostgreSQL; on SQLite the legacy column may remain unused (see `dbm026_kuku_silence_seconds.py`). Run the backend once so migrations apply.
 
 ### Example PUT (30-second silence, minimal cooldown)
 
