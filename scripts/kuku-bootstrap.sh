@@ -12,7 +12,7 @@ usage() {
 KUKU local demo bootstrap — prep only.
 
 What it does on every run:
-- rewrites web/.env with NEXT_PUBLIC_API_BASE_URL (default port 5300; override with LANG_BOT_HTTP_PORT)
+- rewrites web/.env with NEXT_PUBLIC_API_BASE_URL (prefers data/config.yaml api.port, falls back to 5300; override with LANG_BOT_HTTP_PORT)
 - resets the demo API key in data/langbot.db to demo-kuku-key
 - reads one bot UUID from the bots table
 - writes .kuku-demo.env for curl examples
@@ -50,8 +50,26 @@ if ! command -v sqlite3 >/dev/null 2>&1; then
   exit 1
 fi
 
-API_PORT="${LANG_BOT_HTTP_PORT:-5300}"
 API_HOST="${LANG_BOT_HTTP_HOST:-127.0.0.1}"
+CONFIG_PORT="$(
+  awk '
+    $0 ~ /^api:[[:space:]]*$/ {
+      in_api = 1
+      next
+    }
+    in_api && $0 ~ /^[^[:space:]]/ {
+      in_api = 0
+    }
+    in_api && $0 ~ /^[[:space:]]+port:[[:space:]]*/ {
+      line = $0
+      sub(/^[[:space:]]+port:[[:space:]]*/, "", line)
+      gsub(/["'\''[:space:]]/, "", line)
+      print line
+      exit
+    }
+  ' "$REPO_ROOT/data/config.yaml" 2>/dev/null || true
+)"
+API_PORT="${LANG_BOT_HTTP_PORT:-${CONFIG_PORT:-5300}}"
 
 mkdir -p "$REPO_ROOT/web"
 printf 'NEXT_PUBLIC_API_BASE_URL=http://%s:%s\n' "$API_HOST" "$API_PORT" >"$REPO_ROOT/web/.env"
